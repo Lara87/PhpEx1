@@ -1,0 +1,277 @@
+<?php
+ini_set('error_reporting', E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
+class AppException extends Exception
+{
+}
+
+//родительский класс
+class Product
+{
+    public $idProduct;//код товара
+    public $nameProduct;//наименование
+    public $priceProduct;//цена
+    public $countProduct;//кол-во
+    public $productType;//тип товара
+
+    public function __construct( $idProduct, $nameProduct, $priceProduct, $countProduct, ProductType $productType)
+    {
+        $this->idProduct = $idProduct;//ID товара
+        $this->nameProduct = $nameProduct;//наименование
+        $this->priceProduct = $priceProduct;//цена
+        $this->productType = $productType;//тип товара
+        $this->countProduct = $countProduct;
+
+    }
+
+    public function idProduct()
+    {
+        return $this->idProduct;
+    }
+
+    public function nameProduct()
+    {
+        return $this->nameProduct;
+    }
+
+    public function priceProduct()
+    {
+        return $this->priceProduct;
+    }
+
+    public function countProduct()
+    {
+        return $this->countProduct;
+    }
+
+
+    public function productType()
+    {
+        return get_class($this->productType);
+    }
+
+    public function defenitionType(): ProductType
+    {
+        return $this->productType;
+    }
+
+}
+
+
+class ShopProduct
+{
+    public $productTypes = [];
+
+    public $products = [];
+
+    public $profit = 0;
+
+
+    public function __construct(array $productTypes)
+    {
+        $this->productTypes = $productTypes;
+    }
+
+
+    public function addProduct(Product $product)
+    {
+          $this->products[] = $product;
+    }
+
+    public function rejectProduct($idProduct): ?Product
+    {
+        $iterCount = 0;
+        foreach ($this->products as $key => $product)
+        {
+            if ($product->idProduct() === $idProduct)
+            {
+                unset($this->products[$key]);
+                return $product;
+            }
+
+        }
+
+        return null;
+    }
+
+    public function productByCode($idProduct): ?Product
+    {
+        foreach ($this->products as $product) {
+            if ($product->idProduct() === $idProduct) return $product;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return Product[]
+     */
+    public function productsByPrice($from, $to)
+    {
+        $result = [];
+
+        foreach ($this->products as $product) {
+            if ($product->priceProduct() >= $from && $product->priceProduct() <= $to) {
+                $result[] = $product;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return Product[]
+     */
+    public function productsByType($productType)
+    {
+        $result = [];
+
+        foreach ($this->products as $product) {
+            if ($product->productType() === $productType) {
+                $result[] = $product;
+            }
+        }
+
+        return $result;
+    }
+
+    public function productsByName($nameProduct)
+    {
+        $result = [];
+
+        foreach ($this->products as $product) {
+            if ($product->nameProduct() === $nameProduct) {
+                $result[] = $product;
+            }
+        }
+
+        return $result;
+    }
+
+    public function buyProduct($idProduct, $money): Product
+    {
+        $product = $this->productByCode($idProduct);
+
+        if (!$product || $product->priceProduct() !== $money) {
+            throw new AppException('Cant buy');
+        }
+
+        $this->rejectProduct($idProduct);
+
+        $this->profit += $product->priceProduct();
+
+        return $product;
+    }
+
+    public function countProducts()
+    {
+        return count($this->products);
+    }
+
+    public function profit()
+    {
+        return $this->profit;
+    }
+
+    public function availabilityStock()
+    {
+       foreach ($this->products as $product)
+       {
+           $res = countProducts() - rejectProduct();
+       }
+
+    }
+
+
+}
+
+abstract class ProductType
+{
+
+}
+
+class SurpriseType extends ProductType
+{
+
+}
+
+class BookProduct extends ProductType//класс потомок
+{
+    public $nameAuthor;//автор
+    public $countPage;//кол-во страниц
+
+    public function __construct($nameAuthor, $countPage)
+    {
+        $this->nameAuthor = $nameAuthor;
+        $this->countPage = $countPage;
+    }
+}
+
+class PhoneProduct extends ProductType//класс потомок
+{
+    public $maker;//производитель
+    public $operatingSystem;//ОС
+
+    public function __construct($maker, $operatingSystem)
+    {
+        $this->maker = $maker;
+        $this->operatingSystem = $operatingSystem;
+    }
+}
+
+class FoodProduct extends ProductType//класс потомок
+{
+    public $massFood;//вес
+
+    public function __construct($massFood)
+    {
+        $this->massFood = $massFood;
+    }
+}
+
+
+try {
+    echo '<pre>';
+
+    $aShop = new ShopProduct([BookProduct::class, PhoneProduct::class, FoodProduct::class]);
+$productByCode = $aShop->productByCode(1); //null
+
+$aShop->addProduct(new Product(1, 'PHP' ,100, 5, new BookProduct('Author', 115)));
+$aShop->addProduct(new Product(2, 'Phone', 200, 10, new PhoneProduct('Apple', 'iOs')));
+$aShop->addProduct(new Product(4, 'apple',500, 8, new FoodProduct('200')));
+$aShop->addProduct(new Product(8, 'phone',500, 7, new PhoneProduct('Samsung', 'Android')));
+//$aShop->addProduct(new Product(9, 500, 'banana'));
+
+$productByName = $aShop->productsByName('PHP');
+var_dump($productByName);
+
+    $productsByType = $aShop->productsByType(PhoneType::class);
+    var_dump($productsByType);
+
+    $productByCode = $aShop->productByCode(1);
+    var_dump($productByCode);
+
+    $productsByPrice = $aShop->productsByPrice(0, 1000);
+    var_dump($productsByPrice);
+
+    $rejectedProduct = $aShop->rejectProduct(4);
+    var_dump($rejectedProduct);
+
+    $myProduct = $aShop->buyProduct(8, 500);
+    var_dump($myProduct);
+    var_dump($aShop->countProducts());
+    var_dump($aShop->profit());
+
+    $aShop->availabilityStock();
+
+echo '</pre>';
+
+} catch (AppException $e) {
+    var_dump($e->getMessage());
+} catch (Exception $e) {
+    print_r($e);
+}
+
+
